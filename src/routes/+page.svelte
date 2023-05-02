@@ -1,6 +1,7 @@
 <script>
 	import { onMount } from 'svelte';
 	import { clipboard } from '@skeletonlabs/skeleton';
+	import SelectComponent from '$lib/components/SelectComponent.svelte';
 	import { fade } from 'svelte/transition';
 	let showThumbsUp = false;
 
@@ -11,11 +12,72 @@
 		}, 1500);
 	}
 
-    let selfCare;
-	let ageDifference;
-	let weight;
-	let contact;
-	let presentation
+	let combinedText = '';
+	
+	function updateText() {
+		const geen1Text = geen1 ? " geen" : "";
+		const geen2Text = geen2 ? " geen" : "";
+		combinedText = [
+		`De patiënt ${selfcare}. Er is ${ageDifference} verschil tussen de biologische- en kalenderleeftijd. Er is sprake van ${weight}. Patiënt ${contact} contact. De klachtenpresentatie is ${presentation} met de klachteninhoud.`,
+		`Het bewustzijn is ${consciousness}. De aandacht is ${attention}. De concentratie is ${concentration}, en de patiënt is ${orientation}. ${memory} is ${intelligence}. Patiënt is ${insight} intelligent. Ziekte-besef ${hallucinations}. Er zijn ${formalThought} hallucinaties. Het formele denken is ${formalThinking}. Inhoudelijk is er sprake van ${contentThinking}.`,
+		`De stemming is ${mood}, en het affect is ${affect}. De patiënt kampt met ${patientIssues}. Er is${geen2Text} sprake van ${suicidality}.`,
+		`De mimiek is ${mimic}. De spraak is ${speech}. Er is${geen1Text} sprake van ${behavior}.`
+		].join('\n\n');
+	}
+	
+	onMount(() => {
+		updateText();
+	});
+	
+	$: updateText();
+	
+    const paragraphsJSON = {
+  "1": {
+    select: {
+      type: "selfcare",
+      content: [
+        { value: "heeft goede zelfzorg", label: "heeft goede zelfzorg" },
+        { value: "vertoont tekenen van zelfverwaarlozing", label: "vertoont tekenen van zelfverwaarlozing" },
+        { value: "vertoont tekenen van overdreven zelfzorg", label: "vertoont tekenen van overdreven zelfzorg" }
+      ]
+    },
+    select: {
+      type: "ageDifference",
+      content: [
+        { value: "geen", label: "geen" },
+        { value: "enigszins", label: "enigszins" },
+        { value: "duidelijk", label: "duidelijk" }
+      ]
+    },
+    select: {
+      type: "weight",
+      content: [
+        { value: "een gezond gewicht", label: "een gezond gewicht" },
+        { value: "opvallend overgewicht", label: "opvallend overgewicht" },
+        { value: "opvallend ondergewicht", label: "opvallend ondergewicht" }
+      ]
+    },
+    select: {
+      type: "contact",
+      content: [
+        { value: "maakt normaal", label: "maakt normaal" },
+        { value: "is overdreven in", label: "is overdreven in" },
+        { value: "is afwerend in", label: "is afwerend in" }
+      ]
+    },
+    select: {
+      name: "presentation",
+      content: [
+        { value: "consistent", label: "consistent" },
+        { value: "inconsistent", label: "inconsistent" }
+      ]
+    },
+    text: {
+      type: "text",
+      content: "text"
+    }
+  }
+};
 	let insight
 	let formalThought
 	let consciousness;
@@ -44,26 +106,6 @@
 	} else {
 		plural1 = "is";
 	}
-
-  let combinedText = '';
-  
-  function updateText() {
-	const geen1Text = geen1 ? " geen" : "";
-	const geen2Text = geen2 ? " geen" : "";
-    combinedText = [
-      `De patiënt ${selfCare}. Er is ${ageDifference} verschil tussen de biologische- en kalenderleeftijd. Er is sprake van ${weight}. Patiënt ${contact} contact. De klachtenpresentatie is ${presentation} met de klachteninhoud.`,
-      `Het bewustzijn is ${consciousness}. De aandacht is ${attention}. De concentratie is ${concentration}, en de patiënt is ${orientation}. ${memory} is ${intelligence}. Patiënt is ${insight} intelligent. Ziekte-besef ${hallucinations}. Er zijn ${formalThought} hallucinaties. Het formele denken is ${formalThinking}. Inhoudelijk is er sprake van ${contentThinking}.`,
-      `De stemming is ${mood}, en het affect is ${affect}. De patiënt kampt met ${patientIssues}. Er is${geen2Text} sprake van ${suicidality}.`,
-      `De mimiek is ${mimic}. De spraak is ${speech}. Er is${geen1Text} sprake van ${behavior}.`
-    ].join('\n\n');
-  }
-  
-  onMount(() => {
-    updateText();
-  });
-  
-  $: updateText();
-
 </script>
 
 <div class="container mx-auto p-8 space-y-8 max-w-3xl">
@@ -72,7 +114,8 @@
 	<h3>Cognitieve functies</h3>
   <p class="flex flex-wrap gap-y-4 items-center">
     <span>De patiënt&nbsp;</span>
-    <select class="select mr-0" bind:value={selfCare}>
+	<SelectComponent bind:bindValue={selfcare} options={selfcareOptions} />
+    <select class="select mr-0" bind:value={selfcare}>
       <option value="heeft goede zelfzorg">heeft goede zelfzorg</option>
       <option value="vertoont tekenen van zelfverwaarlozing"
         >vertoont tekenen van zelfverwaarlozing</option
@@ -153,9 +196,7 @@
     </select>
     <span>.</span>
     <select class="select w-fit inline-flex" bind:value={memory}>
-      <option value="Zowel het korte- als langetermijngeheugen"
-        >Zowel het korte- als langetermijngeheugen</option
-      >
+      <option value="Zowel het korte- als langetermijngeheugen">Zowel het korte- als langetermijngeheugen</option>
       <option value="Het kortetermijngeheugen">Het kortetermijngeheugen</option>
       <option value="Het langetermijngeheugen">Het langetermijngeheugen</option>
     </select>
