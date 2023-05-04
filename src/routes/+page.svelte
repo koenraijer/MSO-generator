@@ -78,6 +78,17 @@
     }
   }
 };
+	let selfcare
+	let selfcareOptions = [
+		{ value: "heeft goede zelfzorg", label: "heeft goede zelfzorg" },
+		{ value: "vertoont tekenen van zelfverwaarlozing", label: "vertoont tekenen van zelfverwaarlozing" },
+		{ value: "vertoont tekenen van overdreven zelfzorg", label: "vertoont tekenen van overdreven zelfzorg" }
+	]
+	let ageDifference
+	let weight
+	let contact
+	let presentation
+	
 	let insight
 	let formalThought
 	let consciousness;

@@ -6,9 +6,11 @@
 	// Most of your app wide CSS should be put in this file
 	import '../app.postcss';
 	import { AppShell, AppBar } from '@skeletonlabs/skeleton';
+	import { Modal, modalStore } from '@skeletonlabs/skeleton';
 </script>
 
 <!-- App Shell -->
+<Modal />
 <AppShell slotSidebarLeft="bg-surface-500/5 w-56 p-4">
 	<!-- Page Route Content -->
 	<slot />
