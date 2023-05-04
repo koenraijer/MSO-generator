@@ -177,7 +177,13 @@
           {#each $selectOptions as option, index}
             <li class="flex items-center mb-1">
               <span class="mr-2">{option.label}</span>
-              <button type="button" class="p-1 bg-red-500 text-white" on:click={() => removeOption(index)}>Remove</button>
+                <button
+                type="button"
+                class="btn variant-filled-warning text-sm ml-2"
+                on:click={() => removeOption(index)}
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="w-5 h-5" viewBox="0 0 256 256"><path d="M216,36H68.53a20.09,20.09,0,0,0-17.15,9.71L5.71,121.83a12,12,0,0,0,0,12.34l45.67,76.12A20.09,20.09,0,0,0,68.53,220H216a20,20,0,0,0,20-20V56A20,20,0,0,0,216,36Zm-4,160H70.8L30,128,70.8,60H212ZM103.51,143.51,119,128l-15.52-15.51a12,12,0,0,1,17-17L136,111l15.51-15.52a12,12,0,0,1,17,17L153,128l15.52,15.51a12,12,0,0,1-17,17L136,145l-15.51,15.52a12,12,0,0,1-17-17Z"></path></svg>
+                </button>
             </li>
           {/each}
         </ul>
@@ -192,29 +198,30 @@
     <div class="pt-4">
         {#each $paragraphs as paragraph, paragraphIndex}
         <h2>{paragraph.name}</h2>
+        <ul>
         {#each paragraph.elements as element, elementIndex}
-          {#if element.type === 'text'}
-            <TextComponent content={element.content} />
-          {:else if element.type === 'boolean'}
-            <BooleanComponent content={element.content} />
-          {:else if element.type === 'select'}
-                <SelectComponent
-                bind:bindValue={element.content[element.current].value}
-                options={element.content}
-                bind:current={element.current}
-                />
-          {/if}
-          <button
-            type="button"
-            class="mt-1 p-1 bg-red-500 text-white"
-            on:click={() => removeElement(paragraphIndex, elementIndex)}
-          >
-            Remove
-          </button>
+            <li class="flex items-center mb-1">
+                {#if element.type === 'text'}
+                    <TextComponent content={element.content} />
+                {:else if element.type === 'boolean'}
+                    <BooleanComponent content={element.content} />
+                {:else if element.type === 'select'}
+                        <SelectComponent
+                        bind:bindValue={element.content[element.current].value}
+                        options={element.content}
+                        bind:current={element.current}
+                        />
+                {/if}
+                <button
+                    type="button"
+                    class="btn variant-filled-warning text-sm ml-2"
+                    on:click={() => removeElement(paragraphIndex, elementIndex)}
+                >
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="w-5 h-5" viewBox="0 0 256 256"><path d="M216,36H68.53a20.09,20.09,0,0,0-17.15,9.71L5.71,121.83a12,12,0,0,0,0,12.34l45.67,76.12A20.09,20.09,0,0,0,68.53,220H216a20,20,0,0,0,20-20V56A20,20,0,0,0,216,36Zm-4,160H70.8L30,128,70.8,60H212ZM103.51,143.51,119,128l-15.52-15.51a12,12,0,0,1,17-17L136,111l15.51-15.52a12,12,0,0,1,17,17L153,128l15.52,15.51a12,12,0,0,1-17,17L136,145l-15.51,15.52a12,12,0,0,1-17-17Z"></path></svg>
+                </button>
+            </li>
         {/each}
+        </ul>
       {/each}
-      
-    <pre>{JSON.stringify($paragraphs, null, 2)}</pre>
-  </div>
-
-  </div>    
+    </div>
+</div>    
