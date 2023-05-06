@@ -1,0 +1,211 @@
+[
+    {
+      "name": "Algemene indrukken",
+      "elements": [
+        {
+          "type": "text",
+          "content": "De patiënt"
+        },
+        {
+          "type": "select",
+          "content": [
+            {
+              "value": "heeft goede zelfzorg",
+              "label": "heeft goede zelfzorg"
+            },
+            {
+              "value": "vertoont tekenen van zelfverwaarlozing",
+              "label": "vertoont tekenen van zelfverwaarlozing"
+            },
+            {
+              "value": "vertoont tekenen van overdreven zelfzorg",
+              "label": "vertoont tekenen van overdreven zelfzorg"
+            }
+          ],
+          "current": 0
+        },
+        {
+          "type": "text",
+          "content": ", en oogt "
+        },
+        {
+          "type": "select",
+          "content": [
+            {
+              "value": "conform kalenderleeftijd",
+              "label": "conform kalenderleeftijd"
+            },
+            {
+              "value": "jonger dan de kalenderleeftijd",
+              "label": "jonger dan de kalenderleeftijd"
+            },
+            {
+              "value": "ouder dan de kalenderleeftijd",
+              "label": "ouder dan de kalenderleeftijd"
+            }
+          ],
+          "current": 0
+        },
+        {
+          "type": "text",
+          "content": ". De klachtenpresentatie is"
+        },
+        {
+          "type": "select",
+          "content": [
+            {
+              "value": "zakelijk",
+              "label": "zakelijk"
+            },
+            {
+              "value": "onverschillig",
+              "label": "onverschillig"
+            },
+            {
+              "value": "klagend",
+              "label": "klagend"
+            },
+            {
+              "value": "appelerend",
+              "label": "appelerend"
+            },
+            {
+              "value": "aanklampend",
+              "label": "aanklampend"
+            },
+            {
+              "value": "verwijtend",
+              "label": "verwijtend"
+            },
+            {
+              "value": "breedsprakig",
+              "label": "breedsprakig"
+            }
+          ],
+          "current": 0
+        },
+        {
+          "type": "text",
+          "content": "Het contact is"
+        },
+        {
+          "type": "select",
+          "content": [
+            {
+              "value": "goed",
+              "label": "goed"
+            },
+            {
+              "value": "matig",
+              "label": "matig"
+            },
+            {
+              "value": "slecht",
+              "label": "slecht"
+            }
+          ],
+          "current": 0
+        },
+        {
+          "type": "text",
+          "content": ": er is "
+        },
+        {
+          "type": "boolean",
+          "content": "geen",
+          "current": 0
+        },
+        {
+          "type": "text",
+          "content": "wederkerigheid van contact, en"
+        },
+        {
+          "type": "boolean",
+          "content": "geen",
+          "current": 0
+        },
+        {
+          "type": "text",
+          "content": "contactgroei."
+        },
+        {
+          "type": "text",
+          "content": "De houding van de patiënt is "
+        },
+        {
+          "type": "select",
+          "content": [
+            {
+              "value": "natuurlijk",
+              "label": "natuurlijk"
+            },
+            {
+              "value": "vriendelijk",
+              "label": "vriendelijk"
+            },
+            {
+              "value": "luisterend",
+              "label": "luisterend"
+            },
+            {
+              "value": "coöperatief",
+              "label": "coöperatief"
+            },
+            {
+              "value": "respectvol",
+              "label": "respectvol"
+            },
+            {
+              "value": "afwachtend",
+              "label": "afwachtend"
+            },
+            {
+              "value": "afwijzend",
+              "label": "afwijzend"
+            },
+            {
+              "value": "ongeduldig",
+              "label": "ongeduldig"
+            },
+            {
+              "value": "controlerend",
+              "label": "controlerend"
+            },
+            {
+              "value": "sarcastisch",
+              "label": "sarcastisch"
+            },
+            {
+              "value": "onderdanig",
+              "label": "onderdanig"
+            },
+            {
+              "value": "argwanend",
+              "label": "argwanend"
+            },
+            {
+              "value": "triomfantelijk",
+              "label": "triomfantelijk"
+            },
+            {
+              "value": "uitdagend",
+              "label": "uitdagend"
+            },
+            {
+              "value": "schuchter",
+              "label": "schuchter"
+            },
+            {
+              "value": "verstrooid",
+              "label": "verstrooid"
+            }
+          ],
+          "current": 0
+        },
+        {
+          "type": "text",
+          "content": "."
+        }
+      ]
+    }
+  ]

@@ -1,10 +1,26 @@
 <script>
     import { writable } from "svelte/store";
     import { localStorageStore } from '@skeletonlabs/skeleton';
+    import { toastStore } from '@skeletonlabs/skeleton';
+    import { modalStore } from '@skeletonlabs/skeleton';
     import SelectComponent from "$lib/components/SelectComponent.svelte";
     import TextComponent from "$lib/components/TextComponent.svelte";
     import BooleanComponent from "$lib/components/BooleanComponent.svelte";
+    import Moon from "$lib/components/Moon.svelte";
+    import { supabase } from "$lib/supabaseClient.js";
+    import { tick } from "svelte";
+    import { goto } from "$app/navigation";
+    import { focusTrap } from '@skeletonlabs/skeleton';
+    import { popup } from '@skeletonlabs/skeleton';
 
+    let shiftKeyPressed = false;
+    let isFocused = true;
+
+    let optionInput;
+    let paragraphNameInput
+    let typeInput
+    
+    let contentInput
     let elementType = "text";
     let elementContent = "";
     let selectOptions = writable([]);
@@ -21,13 +37,17 @@
     let currentParagraphName = "";
   
     function addParagraph() {
-      const newParagraph = {
-        name: `Paragraph ${$paragraphs.length + 1}`,
-        elements: [],
-      };
-      paragraphs.update((para) => [...para, newParagraph]);
-      currentParagraphIndex = $paragraphs.length - 1;
+        const newParagraph = {
+            name: `Paragraph ${$paragraphs.length + 1}`,
+            elements: [],
+        };
+
+        currentParagraphIndex = $paragraphs.length;
+        currentParagraphName = newParagraph.name;
+
+        paragraphs.update((para) => [...para, newParagraph]);
     }
+
     
     function deleteParagraph(index) {
         if (index >= 0 && index < $paragraphs.length) {
@@ -47,7 +67,17 @@
             content: elementType === "select" ? $selectOptions : elementContent,
         };
 
-        if (elementType === "select") {
+        if (elementType === "select" && $selectOptions.length === 0) {
+                console.log('Please add at least one option for the select element.')
+                const t = {
+                    message: 'Please add at least one option for the select element.',
+                    background: 'variant-filled-warning',
+                };
+                toastStore.trigger(t);
+                return; // Do not proceed with adding the element
+        }
+
+        if (elementType !== "text") {
             element.current = 0; // Add the 'current' property with a default value of 0
         }
 
@@ -58,7 +88,8 @@
 
         elementContent = "";
         selectOptions.set([]);
-        }
+        typeInput.focus() // THis doesn't work right now
+    }
   
     function addOption() {
       if (tempSelectOption) {
@@ -67,6 +98,15 @@
           { value: tempSelectOption, label: tempSelectOption },
         ]);
         tempSelectOption = "";
+      } else {
+        if (!shiftKeyPressed) {
+            const t = {
+                message: 'Please enter an option value.',
+                background: 'variant-filled-warning',
+            };
+            toastStore.trigger(t);
+        }
+
       }
     }
   
@@ -87,141 +127,305 @@
     }
 
     $: if (currentParagraphIndex !== -1) {
-    paragraphs.update((para) => {
-        para[currentParagraphIndex].name = currentParagraphName;
-        return [...para];
-    });
-}
+        paragraphs.update((para) => {
+            if (currentParagraphIndex >= 0 && currentParagraphIndex < para.length) {
+                para[currentParagraphIndex].name = currentParagraphName;
+                return [...para];
+            }
+            return para;
+        });
+    }
 
+    function clearMemory() {
+        const confirm = {
+            type: 'confirm',
+            // Data
+            title: 'Do you want to clear the memory?',
+            body: 'Press confirm if you want to clear the memory.',
+            // TRUE if confirm pressed, FALSE if cancel pressed
+            response: (r) => {
+                if (r) {
+                    console.log('Clearing memory...');
+                    localStorage.clear();
+                    paragraphs.set([])
+                    addParagraph();
+                    const t = {
+                        message: 'Memory cleared.',
+                        background: 'variant-filled-success',
+                    };
+                    toastStore.trigger(t);
+                }
+            }
+        };
+        modalStore.trigger(confirm);
+    }
+
+    function uuidv4() {
+        return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+            (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+        );
+        }
+
+    let loading = false;
+
+    async function createStandardText() {
+        loading = true;
+        let uuid = uuidv4();
+        try {
+            // Insert the JSON object into the Standardtexts table
+            const { data, error } = await supabase
+                .from('Standardtexts')
+                .insert([{ uuid: uuid, json: JSON.stringify($paragraphs) }]);
+
+            if (error) {
+                throw error;
+            }
+
+            // Show a success toast
+            const t = {
+                message: 'Standard text created successfully.',
+                background: 'variant-filled-success',
+            };
+            toastStore.trigger(t);
+
+            // Navigate to another page or perform any other desired action
+            goto(`/${uuid}`); // Redirect to the newly created standard text page
+            
+        } catch (error) {
+            console.error('Error creating standard text:', error);
+
+            // Show an error toast
+            const t = {
+                message: 'Error creating standard text.',
+                background: 'variant-filled-warning',
+            };
+            toastStore.trigger(t);
+        } finally {
+            loading = false;
+        }
+    }
+    
+    let popupSettings = {
+        // Set the event as: click | hover | hover-click | focus | focus-click
+        event: 'hover-click',
+        // Provide a matching 'data-popup' value.
+        target: 'menuPopup'
+    };
+
+    let rightColumnHeight;
+    let ulHeight;
+    $: leftColumnStyle = `max-height: ${rightColumnHeight}px;`;
+
+    $: console.log($paragraphs.length)
+    $: console.log(ulHeight > rightColumnHeight, ulHeight, rightColumnHeight)
   </script>
   
-  <div class="container mx-auto p-8 space-y-8 max-w-3xl">
-    <h1 class="text-2xl mb-4">Add JSON elements</h1>
-  
-    <div class="mb-4">
-      <ul class="mb-4 btn-group">
-        {#each $paragraphs as paragraph, index}
-        <li class="inline-block variant-soft-surface relative group">
-            <div class="flex flex-row flex-nowrap">
-            <button
-                type="button"
-                class="p-2 !pr-1 !mr-0"
-                on:click={() => switchParagraph(index)}
-            >{paragraph.name || `Paragraph ${index + 1}`}</button>
-            <span on:click={() => deleteParagraph(index)} class="cursor-pointer p-1 inline !border-none self-center pr-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="w-4 h-4" viewBox="0 0 256 256"><path d="M216,48H40a12,12,0,0,0,0,24h4V208a20,20,0,0,0,20,20H192a20,20,0,0,0,20-20V72h4a12,12,0,0,0,0-24ZM188,204H68V72H188ZM76,20A12,12,0,0,1,88,8h80a12,12,0,0,1,0,24H88A12,12,0,0,1,76,20Z"></path></svg>
-            </span>
-            </div>
-        </li>
-        {/each}
-        <li class="text-white hover:text-black">
-            <button type="button" class="p-2 btn variant-filled-secondary rounded-r-full !rounded-l-none" on:click={addParagraph}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="w-5 h-5 mr-2" viewBox="0 0 256 256"><path d="M128,20A108,108,0,1,0,236,128,108.12,108.12,0,0,0,128,20Zm0,192a84,84,0,1,1,84-84A84.09,84.09,0,0,1,128,212Zm52-84a12,12,0,0,1-12,12H140v28a12,12,0,0,1-24,0V140H88a12,12,0,0,1,0-24h28V88a12,12,0,0,1,24,0v28h28A12,12,0,0,1,180,128Z"></path></svg>
-                Add paragraph
-            </button>
-        </li>
-      </ul>
-    </div>
-  
-    {#if currentParagraphIndex !== -1}
-      <div class="mb-4">
-        <label for="paragraphName" class="block mb-2">Paragraph Name</label>
-        <input
-            type="text"
-            bind:value={currentParagraphName}
-            id="paragraphName"
-            class="input !border-none rounded-md"
-            placeholder="Enter paragraph name"
-        />
-      </div>
-    {/if}
-  
-    <div class="mb-4">
-      <label for="type" class="block mb-2">Element Type</label>
-      <select bind:value={elementType} id="type" class="input !border-none rounded-md"
-      >
-        <option value="text">Text</option>
-        <option value="select">Select</option>
-        <option value="boolean">Boolean</option>
-      </select>
-    </div>
-  
-    {#if elementType !== "select"}
-      <div class="mb-4">
-        <label for="content" class="block mb-2">Content</label>
-        <input
-          type="text"
-          bind:value={elementContent}
-          id="content"
-          class="input !border-none rounded-md"
-          placeholder="Enter content"
-        />
-      </div>
-    {:else}
-      <div class="mb-4">
-        <label for="option" class="block mb-2">Select Options</label>
-        <div class="flex">
-          <input
-            type="text"
-            bind:value={tempSelectOption}
-            id="option"
-            class="input !border-none !rounded-l-md rounded-r-none"
-            placeholder="Enter option"
-          />
-          <button type="button" class="p-2  text-white btn variant-filled-secondary rounded-l-none px-3" on:click={addOption}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="w-5 h-5" viewBox="0 0 256 256"><path d="M128,20A108,108,0,1,0,236,128,108.12,108.12,0,0,0,128,20Zm0,192a84,84,0,1,1,84-84A84.09,84.09,0,0,1,128,212Zm52-84a12,12,0,0,1-12,12H140v28a12,12,0,0,1-24,0V140H88a12,12,0,0,1,0-24h28V88a12,12,0,0,1,24,0v28h28A12,12,0,0,1,180,128Z"></path></svg>
+<div class="container mx-auto p-8 space-y-8 max-w-3xl flex-col flex-nowrap">
 
-            </button>
+        <button use:popup={popupSettings} class="absolute top-0 right-6 my-6 bg-surface-200 p-2 rounded-full aspect-square text-xl">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="w-5 h-5" viewBox="0 0 256 256"><path d="M144,128a16,16,0,1,1-16-16A16,16,0,0,1,144,128ZM60,112a16,16,0,1,0,16,16A16,16,0,0,0,60,112Zm136,0a16,16,0,1,0,16,16A16,16,0,0,0,196,112Z"></path></svg>
+        </button>
+        <div data-popup="menuPopup" class="-translate-x-4 -translate-y-4">
+            <button class="btn variant-filled-surface" on:click={clearMemory}>Clear memory</button>
         </div>
-        <ul class="mt-2">
-          {#each $selectOptions as option, index}
-            <li class="flex items-center mb-1">
-              <span class="mr-2">{option.label}</span>
+
+    <div>
+        <h1 class="text-2xl mb-8 md:mb-12">The standard text generator</h1>
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-x-4 md:gap-x-8 lg:gap-x-12"> 
+            <div class="flex flex-col col-span-2 md:w-fit w-full h-auto pb-8 md:pb-0" style={leftColumnStyle} bind:clientHeight="{ulHeight}">
+                <span class="block mb-1">Paragraphs</span>
+                <ul
+                class="h-fit btn-group-vertical bg-surface-100 overflow-x-none rounded-md overflow {ulHeight >= rightColumnHeight ? 'overflow-y-scroll' : 'overflow-y-none'}"
+                >
+                {#each $paragraphs as paragraph, index}
+                <li
+                    class="inline-block relative group"
+                >
+                    <div class="flex flex-row flex-nowrap">
+                    <button on:click={() => switchParagraph(index)}>
+                        <span class="border rounded-full border-surface-800 p-2 {currentParagraphIndex === index ? '!bg-surface-800' : ''}"></span>
+                    </button>
+                    <input
+                        type="text"
+                        bind:value={paragraph.name}
+                        class="input !border-none rounded-md w-full bg-transparent"
+                        placeholder={`Paragraph ${index + 1}`}
+                        on:input={() => updateParagraphName(index, paragraph.name)}
+                    />
+                    <span
+                        on:click={() => deleteParagraph(index)}
+                        class="cursor-pointer p-1 inline !border-none self-center pr-2 hover:text-surface-400"
+                    >
+                        <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="32"
+                        height="32"
+                        fill="currentColor"
+                        class="w-4 h-4"
+                        viewBox="0 0 256 256"
+                        >
+                        <path
+                            d="M216,48H40a12,12,0,0,0,0,24h4V208a20,20,0,0,0,20,20H192a20,20,0,0,0,20-20V72h4a12,12,0,0,0,0-24ZM188,204H68V72H188ZM76,20A12,12,0,0,1,88,8h80a12,12,0,0,1,0,24H88A12,12,0,0,1,76,20Z"
+                        ></path>
+                        </svg>
+                    </span>
+                    </div>
+                </li>
+                {/each}
+                </ul>
                 <button
                 type="button"
-                class="btn variant-filled-warning text-sm ml-2"
-                on:click={() => removeOption(index)}
+                class="w-full mt-8 md:mt-10 p-2 btn variant-filled-surface bg-surface-400 text-white rounded-md"
+                on:click={addParagraph}
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="w-5 h-5" viewBox="0 0 256 256"><path d="M216,36H68.53a20.09,20.09,0,0,0-17.15,9.71L5.71,121.83a12,12,0,0,0,0,12.34l45.67,76.12A20.09,20.09,0,0,0,68.53,220H216a20,20,0,0,0,20-20V56A20,20,0,0,0,216,36Zm-4,160H70.8L30,128,70.8,60H212ZM103.51,143.51,119,128l-15.52-15.51a12,12,0,0,1,17-17L136,111l15.51-15.52a12,12,0,0,1,17,17L153,128l15.52,15.51a12,12,0,0,1-17,17L136,145l-15.51,15.52a12,12,0,0,1-17-17Z"></path></svg>
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="32"
+                        height="32"
+                        fill="currentColor"
+                        class="w-5 h-5 mr-2"
+                        viewBox="0 0 256 256"
+                    >
+                        <path
+                        d="M128,20A108,108,0,1,0,236,128,108.12,108.12,0,0,0,128,20Zm0,192a84,84,0,1,1,84-84A84.09,84.09,0,0,1,128,212Zm52-84a12,12,0,0,1-12,12H140v28a12,12,0,0,1-24,0V140H88a12,12,0,0,1,0-24h28V88a12,12,0,0,1,24,0v28h28A12,12,0,0,1,180,128Z"
+                        ></path>
+                    </svg>
+                    Add paragraph
                 </button>
-            </li>
-          {/each}
-        </ul>
-      </div>
-    {/if}
-  
-    <button type="button" class="btn variant-filled-tertiary text-white" on:click={addElement}>
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="w-5 h-5 mr-2" viewBox="0 0 256 256"><path d="M128,20A108,108,0,1,0,236,128,108.12,108.12,0,0,0,128,20Zm0,192a84,84,0,1,1,84-84A84.09,84.09,0,0,1,128,212Zm52-84a12,12,0,0,1-12,12H140v28a12,12,0,0,1-24,0V140H88a12,12,0,0,1,0-24h28V88a12,12,0,0,1,24,0v28h28A12,12,0,0,1,180,128Z"></path></svg>
-        Add element
-    </button>
+            </div>
+            <div class="col-span-3 h-fit" bind:clientHeight={rightColumnHeight}>
+                <hr class="md:invisible visible my-8">
+                <form use:focusTrap={isFocused}>
+                    <div class="mb-6 md:mb-8 w-fit">
+                        <label for="type" class="block mb-1">Element Type</label>
+                        <select
+                            bind:value={elementType}
+                            id="type"
+                            class="input !border-none rounded-md"
+                            bind:this={typeInput}
+                            on:change={async () => {
+                                await tick();
+                                if (elementType !== 'select') {
+                                    contentInput.focus();
+                                } else {
+                                    optionInput.focus();
+                                }
+                            }}
+                        >
+                            <option value="text">Text</option>
+                            <option value="select">Select</option>
+                            <option value="boolean">Boolean</option>
+                        </select>
+                    </div>
+    
+                    {#if elementType !== "select"}
+                        <div class="mb-6 md:mb-6">
+                            <label for="content" class="block mb-1">Content</label>
+                            <input
+                                type="text"
+                                bind:value={elementContent}
+                                id="content"
+                                class="input !border-none rounded-md"
+                                placeholder="Enter content"
+                                on:keydown={(e) => {
+                                    if (e.key === 'Enter') { addElement(); typeInput.focus(); }
+                                }}
+                                bind:this={contentInput}
+                            />
+                        </div>
+                    {:else}
+                        <div class="mb-4">
+                            <label for="option" class="block mb-2">Select Options</label>
+                            <div class="flex">
+                                <input
+                                    type="text"
+                                    bind:value={tempSelectOption}
+                                    bind:this={optionInput}
+                                    id="option"
+                                    class="input !border-none !rounded-l-md rounded-r-none"
+                                    placeholder="Enter option"
+                                    on:keyup={(e) => {
+                                        if (e.key === 'Shift') { shiftKeyPressed = false; }
+                                    }}
+                                    on:keydown={(e) => {
+                                        if (e.key === 'ArrowUp') { typeInput.focus(); }
+                                        if (e.key === 'Enter' && !shiftKeyPressed) { addOption(); optionInput.focus(); }
+                                        if (e.key === 'Shift') { shiftKeyPressed = true; }
+                                        if (e.key === 'Enter' && shiftKeyPressed) { addOption(); addElement(); typeInput.focus(); }
+                                    }}
+                                />
+                                <button type="button" class="p-2 text-white btn variant-filled-secondary rounded-l-none px-3" on:click={() => { addOption(); optionInput.focus(); }}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="w-5 h-5" viewBox="0 0 256 256"><path d="M128,20A108,108,0,1,0,236,128,108.12,108.12,0,0,0,128,20Zm0,192a84,84,0,1,1,84-84A84.09,84.09,0,0,1,128,212Zm52-84a 12,12,0,0,1-12,12H140v28a12,12,0,0,1-24,0V140H88a12,12,0,0,1,0-24h28V88a12,12,0,0,1,24,0v28h28A12,12,0,0,1,180,128Z"></path></svg>
+                                </button>
+                            </div>
+                            <ul class="mt-2">
+                            {#each $selectOptions as option, index}
+                                <li class="flex items-center mb-1">
+                                <span class="mr-2">{option.label}</span>
+                                    <button
+                                    type="button"
+                                    class="btn variant-filled-warning text-sm ml-2"
+                                    on:click={() => removeOption(index)}
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="w-5 h-5" viewBox="0 0 256 256"><path d="M216,36H68.53a20.09,20.09,0,0,0-17.15,9.71L5.71,121.83a12,12,0,0,0,0,12.34l45.67,76.12A20.09,20.09,0,0,0,68.53,220H216a20,20,0,0,0,20-20V56A20,20,0,0,0,216,36Zm-4,160H70.8L30,128,70.8,60H212ZM103.51,143.51,119,128l-15.52-15.51a12,12,0,0,1,17-17L136,111l15.51-15.52a12,12,0,0,1,17,17L153,128l15.52,15.51a12,12,0,0,1-17,17L136,145l-15.51,15.52a12,12,0,0,1-17-17Z"></path></svg>
+                                    </button>
+                                </li>
+                            {/each}
+                            </ul>
+                        </div>
+                    {/if}
+    
+                    <button type="button" class="btn variant-filled-surface bg-surface-400 text-white rounded-md mt-4 w-full" on:click|preventDefault={addElement} on:keydown={(e) => { if (e.key === 'Enter') addElement();typeInput.focus()}}>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="w-5 h-5 mr-2" viewBox="0 0 256 256"><path d="M128,20A108,108,0,1,0,236,128,108.12,108.12,0,0,0,128,20Zm0,192a84,84,0,1,1,84-84A84.09,84.09,0,0,1,128,212Zm52-84a12,12,0,0,1-12,12H140v28a12,12,0,0,1-24,0V140H88a12,12,0,0,1,0-24h28V88a12,12,0,0,1,24,0v28h28A12,12,0,0,1,180,128Z"></path></svg>
+                        Add element
+                    </button>   
+                </form>
+            </div>
+        </div>
+    
+        <hr class="my-8">
 
-    <div class="pt-4">
-        {#each $paragraphs as paragraph, paragraphIndex}
-        <h2>{paragraph.name}</h2>
-        <ul>
-        {#each paragraph.elements as element, elementIndex}
-            <li class="flex items-center mb-1">
-                {#if element.type === 'text'}
-                    <TextComponent content={element.content} />
-                {:else if element.type === 'boolean'}
-                    <BooleanComponent content={element.content} />
-                {:else if element.type === 'select'}
-                        <SelectComponent
-                        bind:bindValue={element.content[element.current].value}
-                        options={element.content}
-                        bind:current={element.current}
-                        />
-                {/if}
-                <button
-                    type="button"
-                    class="btn variant-filled-warning text-sm ml-2"
-                    on:click={() => removeElement(paragraphIndex, elementIndex)}
-                >
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="w-5 h-5" viewBox="0 0 256 256"><path d="M216,36H68.53a20.09,20.09,0,0,0-17.15,9.71L5.71,121.83a12,12,0,0,0,0,12.34l45.67,76.12A20.09,20.09,0,0,0,68.53,220H216a20,20,0,0,0,20-20V56A20,20,0,0,0,216,36Zm-4,160H70.8L30,128,70.8,60H212ZM103.51,143.51,119,128l-15.52-15.51a12,12,0,0,1,17-17L136,111l15.51-15.52a12,12,0,0,1,17,17L153,128l15.52,15.51a12,12,0,0,1-17,17L136,145l-15.51,15.52a12,12,0,0,1-17-17Z"></path></svg>
-                </button>
-            </li>
+        <div class="">
+            <h2></h2>
+            {#each $paragraphs as paragraph, paragraphIndex}
+            <h3 class="my-4">{paragraph.name}</h3>
+            <p>
+            {#each paragraph.elements as element, elementIndex}
+                <span class="group inline relative">
+                    {#if element.type === 'text'}
+                        <TextComponent content={element.content} />
+                    {:else if element.type === 'boolean'}
+                        <BooleanComponent content={element.content} disabled/>
+                    {:else if element.type === 'select'}
+                            <SelectComponent
+                            bind:bindValue={element.content[element.current].value}
+                            options={element.content}
+                            disabled
+                            />
+                    {/if}
+                    <button
+                        type="button"
+                        class="btn variant-filled-surface text-sm ml-2 group-hover:visible invisible p-1 absolute -top-[100%] right-0"
+                        on:click={() => removeElement(paragraphIndex, elementIndex)}
+                    >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="w-5 h-5" viewBox="0 0 256 256"><path d="M216,36H68.53a20.09,20.09,0,0,0-17.15,9.71L5.71,121.83a12,12,0,0,0,0,12.34l45.67,76.12A20.09,20.09,0,0,0,68.53,220H216a20,20,0,0,0,20-20V56A20,20,0,0,0,216,36Zm-4,160H70.8L30,128,70.8,60H212ZM103.51,143.51,119,128l-15.52-15.51a12,12,0,0,1,17-17L136,111l15.51-15.52a12,12,0,0,1,17,17L153,128l15.52,15.51a12,12,0,0,1-17,17L136,145l-15.51,15.52a12,12,0,0,1-17-17Z"></path></svg>
+                    </button>
+                </span>
+            {/each}
+            </p>
         {/each}
-        </ul>
-      {/each}
+        </div>
+
     </div>
+
+    <button class="btn rounded-md w-full flex items-center text-white variant-filled-tertiary" on:click={createStandardText}>
+        <div class="flex flex-row flex-nowrap w-fit">
+            {#if loading}
+            <Moon class="absolute inset-0 mx-auto my-auto" size=20 borderWidth=2 />
+            {:else}
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="w-5 h-5 inset-0 mx-auto my-auto" viewBox="0 0 256 256"><path d="M216.49,79.51l-56-56A12,12,0,0,0,152,20H56A20,20,0,0,0,36,40V216a20,20,0,0,0,20,20H200a20,20,0,0,0,20-20V88A12,12,0,0,0,216.49,79.51ZM160,57l23,23H160ZM60,212V44h76V92a12,12,0,0,0,12,12h48V212Zm104-60a12,12,0,0,1-12,12H140v12a12,12,0,0,1-24,0V164H104a12,12,0,0,1,0-24h12V128a12,12,0,0,1,24,0v12h12A12,12,0,0,1,164,152Z"></path></svg>
+            {/if}
+            <span class="ml-1">Create StandardText</span>
+        </div>
+    </button>
 </div>    

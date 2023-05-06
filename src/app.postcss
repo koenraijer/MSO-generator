@@ -5,3 +5,25 @@ html, body { @apply h-full overflow-hidden; }
     background-color: rgb(var(--color-surface-100));
     @apply w-fit h-fit my-0 py-1 inline-flex border-none !border-b min-w-min whitespace-normal
 }
+
+.btn:focus {
+    @apply outline-none border-black
+}
+   .elements-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .dnd {
+        padding: 8px;
+        border: 1px solid #ccc;
+        background-color: #f0f0f0;
+        cursor: grab;
+        user-select: none;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+
+    .dnd:active {
+        cursor: grabbing;
+    }
